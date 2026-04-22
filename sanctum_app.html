@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sanctum</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
-<script src="https://accounts.google.com/gsi/client" async defer></script>
+
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -1590,7 +1590,7 @@ function lockApp() {
 }
 
 // ══════════════════════════════
-// GOOGLE DRIVE AUTH
+// GOOGLE DRIVE AUTH — PKCE flow
 // ══════════════════════════════
 function showDriveModal() {
   document.getElementById('driveModalOverlay').classList.add('visible');
@@ -1605,22 +1605,112 @@ function skipDriveAuth() {
   setSyncStatus('idle', 'backup not enabled');
 }
 
-function startDriveAuth() {
+function base64urlEncode(buffer) {
+  return btoa(String.fromCharCode(...new Uint8Array(buffer)))
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+}
+
+async function generatePKCE() {
+  const verifier = base64urlEncode(crypto.getRandomValues(new Uint8Array(32)));
+  const challenge = base64urlEncode(
+    await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier))
+  );
+  return { verifier, challenge };
+}
+
+async function startDriveAuth() {
   hideDriveModal();
-  const client = google.accounts.oauth2.initTokenClient({
+
+  const { verifier, challenge } = await generatePKCE();
+  sessionStorage.setItem('pkce_verifier', verifier);
+  sessionStorage.setItem('post_auth_passphrase', state.passphrase);
+
+  const params = new URLSearchParams({
     client_id: GOOGLE_CLIENT_ID,
+    redirect_uri: window.location.href.split('?')[0],
+    response_type: 'code',
     scope: DRIVE_SCOPE,
-    callback: async (response) => {
-      if (response.error) {
-        setSyncStatus('err', 'Drive connection failed');
-        return;
-      }
-      driveToken = response.access_token;
-      setSyncStatus('busy', 'connected, syncing…');
-      await syncFromDrive();
-    },
+    code_challenge: challenge,
+    code_challenge_method: 'S256',
+    access_type: 'offline',
+    prompt: 'consent',
   });
-  client.requestAccessToken();
+
+  window.location.href = 'https://accounts.google.com/o/oauth2/v2/auth?' + params.toString();
+}
+
+async function handleOAuthCallback() {
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get('code');
+  const error = params.get('error');
+
+  if (error) {
+    setSyncStatus('err', 'Drive connection failed');
+    // Clean URL
+    window.history.replaceState({}, '', window.location.pathname);
+    return;
+  }
+
+  if (!code) return;
+
+  // Clean URL immediately
+  window.history.replaceState({}, '', window.location.pathname);
+
+  const verifier = sessionStorage.getItem('pkce_verifier');
+  const savedPassphrase = sessionStorage.getItem('post_auth_passphrase');
+  sessionStorage.removeItem('pkce_verifier');
+  sessionStorage.removeItem('post_auth_passphrase');
+
+  if (!verifier) {
+    setSyncStatus('err', 'Auth session expired, please try again');
+    return;
+  }
+
+  setSyncStatus('busy', 'connecting…');
+
+  try {
+    // Exchange code for token via a CORS-friendly approach
+    // Since we can't hit token endpoint directly from browser with client_secret,
+    // we use the implicit workaround: re-request with token response type
+    // after confirming code was valid. For a pure SPA without a backend,
+    // we use the token endpoint with no secret (public client PKCE).
+    const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        client_id: GOOGLE_CLIENT_ID,
+        code,
+        code_verifier: verifier,
+        grant_type: 'authorization_code',
+        redirect_uri: window.location.href.split('?')[0],
+      }),
+    });
+
+    const tokenData = await tokenRes.json();
+
+    if (tokenData.error) {
+      setSyncStatus('err', 'Token exchange failed');
+      console.error('Token error:', tokenData);
+      return;
+    }
+
+    driveToken = tokenData.access_token;
+
+    // Restore passphrase and re-derive key
+    if (savedPassphrase && cryptoSalt) {
+      state.passphrase = savedPassphrase;
+      cryptoKey = await deriveKey(savedPassphrase, cryptoSalt);
+    }
+
+    setSyncStatus('busy', 'connected, syncing…');
+    renderShelf();
+    goTo('shelf');
+    await syncFromDrive();
+
+  } catch(e) {
+    setSyncStatus('err', 'Connection failed');
+    console.error('OAuth error:', e);
+  }
 }
 
 async function manualSync() {
@@ -2440,6 +2530,18 @@ if (throttleRemaining() > 0) {
 // Update lock hint
 if (state._passphraseHash) {
   document.getElementById('lockHint').textContent = '';
+}
+
+// Handle OAuth redirect callback
+if (window.location.search.includes('code=') || window.location.search.includes('error=')) {
+  if (state._passphraseHash) {
+    renderShelf();
+    goTo('shelf');
+    setSyncStatus('busy', 'completing sign-in…');
+    handleOAuthCallback();
+  } else {
+    window.history.replaceState({}, '', window.location.pathname);
+  }
 }
 </script>
 </body>
