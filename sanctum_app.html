@@ -1,0 +1,2446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sanctum</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #e8e8e2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 24px;
+    font-family: 'DM Sans', system-ui, sans-serif;
+  }
+
+  .shell {
+    background: #f5f5f0;
+    border-radius: 20px;
+    overflow: hidden;
+    width: 100%;
+    max-width: 420px;
+    min-height: 760px;
+    height: 760px;
+    position: relative;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.12);
+  }
+
+  .screen {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    background: #f5f5f0;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.22s ease;
+  }
+
+  .screen.active {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 22px 28px 14px;
+    flex-shrink: 0;
+  }
+
+  .back-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #0e0e0e;
+    cursor: pointer;
+    letter-spacing: 0.01em;
+    background: none;
+    border: none;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .back-btn svg {
+    width: 14px; height: 14px;
+    stroke: #0e0e0e; fill: none;
+    stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+  }
+
+  .icon-btn {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: #0e0e0e;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .icon-btn svg {
+    width: 11px; height: 11px;
+    stroke: #f5f5f0; fill: none;
+    stroke-width: 2; stroke-linecap: round;
+  }
+
+  .section-rule {
+    height: 1px;
+    background: rgba(0,0,0,0.07);
+    margin: 0 28px;
+    flex-shrink: 0;
+  }
+
+  /* ══════════════════════════════
+     SCREEN 1 — LOCK
+  ══════════════════════════════ */
+  #screen-lock {
+    align-items: center;
+    justify-content: center;
+    padding: 48px 40px;
+    text-align: center;
+  }
+
+  .lock-wordmark {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 38px;
+    font-weight: 300;
+    font-style: italic;
+    color: #0e0e0e;
+    letter-spacing: -0.01em;
+    margin-bottom: 10px;
+  }
+
+  .lock-tagline {
+    font-size: 11px;
+    color: rgba(0,0,0,0.28);
+    letter-spacing: 0.08em;
+    margin-bottom: 56px;
+    font-weight: 400;
+  }
+
+  .lock-input-wrap {
+    width: 100%;
+    margin-bottom: 14px;
+    position: relative;
+  }
+
+  .lock-input {
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid rgba(0,0,0,0.15);
+    padding: 10px 0;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 300;
+    color: #0e0e0e;
+    text-align: center;
+    outline: none;
+    letter-spacing: 0.04em;
+    transition: border-color 0.15s;
+  }
+
+  .lock-input::placeholder {
+    color: rgba(0,0,0,0.2);
+    font-style: italic;
+    letter-spacing: 0.02em;
+  }
+
+  .lock-input:focus { border-bottom-color: #0e0e0e; }
+
+  .lock-hint {
+    font-size: 11px;
+    color: rgba(0,0,0,0.22);
+    letter-spacing: 0.03em;
+    line-height: 1.6;
+    margin-bottom: 40px;
+  }
+
+  .lock-error {
+    font-size: 12px;
+    color: rgba(180,60,60,0.7);
+    letter-spacing: 0.02em;
+    margin-bottom: 16px;
+    min-height: 18px;
+  }
+
+  .lock-btn {
+    background: #0e0e0e;
+    color: #f5f5f0;
+    border: none;
+    border-radius: 10px;
+    padding: 13px 36px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+
+  .lock-btn:hover { opacity: 0.85; }
+  .lock-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  .lock-copy {
+    position: absolute;
+    bottom: 32px;
+    left: 0; right: 0;
+    font-size: 10px;
+    color: rgba(0,0,0,0.18);
+    letter-spacing: 0.04em;
+    line-height: 1.6;
+    padding: 0 40px;
+    font-style: italic;
+  }
+
+  /* ══════════════════════════════
+     SCREEN 2 — NOTEBOOK SHELF
+  ══════════════════════════════ */
+  #screen-shelf { overflow: hidden; }
+
+  .shelf-header {
+    padding: 28px 28px 0;
+    flex-shrink: 0;
+  }
+
+  .shelf-date {
+    font-size: 11px;
+    color: rgba(0,0,0,0.3);
+    letter-spacing: 0.08em;
+    font-weight: 400;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .shelf-greeting {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 34px;
+    font-weight: 300;
+    font-style: italic;
+    color: #0e0e0e;
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+    margin-bottom: 24px;
+  }
+
+  .shelf-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 22px 28px 0;
+    flex-shrink: 0;
+  }
+
+  .shelf-wordmark {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 20px;
+    font-weight: 300;
+    font-style: italic;
+    color: #0e0e0e;
+    letter-spacing: -0.01em;
+  }
+
+  .shelf-right {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .shelf-sync-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    opacity: 0.4;
+    transition: opacity 0.15s;
+  }
+
+  .shelf-sync-btn:hover { opacity: 0.7; }
+  .shelf-sync-btn.syncing { opacity: 1; }
+  .shelf-sync-btn svg { width: 15px; height: 15px; stroke: #0e0e0e; fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+  .shelf-sync-btn.syncing svg { animation: spin 1s linear infinite; }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .shelf-lock-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+  }
+
+  .shelf-lock-btn svg {
+    width: 16px; height: 16px;
+    stroke: rgba(0,0,0,0.4); fill: none;
+    stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round;
+  }
+
+  /* sync status bar */
+  .sync-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 28px 10px;
+    flex-shrink: 0;
+  }
+
+  .sync-dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.15);
+    flex-shrink: 0;
+    transition: background 0.3s;
+  }
+
+  .sync-dot.ok { background: #5aaa77; }
+  .sync-dot.err { background: #c05050; }
+  .sync-dot.busy { background: #e0a050; }
+
+  .sync-label {
+    font-size: 10px;
+    color: rgba(0,0,0,0.28);
+    letter-spacing: 0.04em;
+    font-style: italic;
+  }
+
+  .notebook-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0;
+  }
+
+  .notebook-list::-webkit-scrollbar { display: none; }
+
+  .notebook-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 28px;
+    border-bottom: 1px solid rgba(0,0,0,0.055);
+    cursor: pointer;
+    transition: background 0.12s;
+  }
+
+  .notebook-row:last-child { border-bottom: none; }
+  .notebook-row:active { background: rgba(0,0,0,0.025); }
+  .notebook-row:hover .nb-arrow { opacity: 1; transform: translateX(0); }
+
+  .nb-left { flex: 1; }
+
+  .nb-name {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 24px;
+    font-weight: 300;
+    font-style: italic;
+    color: #0e0e0e;
+    line-height: 1.2;
+    margin-bottom: 3px;
+    letter-spacing: -0.005em;
+  }
+
+  .nb-meta {
+    font-size: 11px;
+    color: rgba(0,0,0,0.28);
+    letter-spacing: 0.04em;
+  }
+
+  .nb-arrow {
+    opacity: 0;
+    transform: translateX(-4px);
+    transition: opacity 0.15s, transform 0.15s;
+  }
+
+  .nb-arrow svg {
+    width: 12px; height: 12px;
+    stroke: rgba(0,0,0,0.35); fill: none;
+    stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
+  }
+
+  .shelf-add-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 18px 28px;
+    cursor: pointer;
+    border-top: 1px solid rgba(0,0,0,0.07);
+    margin-top: auto;
+    flex-shrink: 0;
+  }
+
+  .shelf-add-circle {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    border: 1.5px solid #0e0e0e;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .shelf-add-circle svg {
+    width: 9px; height: 9px;
+    stroke: #0e0e0e; fill: none;
+    stroke-width: 2; stroke-linecap: round;
+  }
+
+  .shelf-add-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: #0e0e0e;
+    letter-spacing: 0.01em;
+  }
+
+  /* ══════════════════════════════
+     SCREEN 3 — ENTRY INDEX
+  ══════════════════════════════ */
+  #screen-index { overflow: hidden; }
+
+  .notebook-header {
+    padding: 8px 28px 20px;
+    flex-shrink: 0;
+  }
+
+  .notebook-title {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 34px;
+    font-weight: 300;
+    font-style: italic;
+    color: #0e0e0e;
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+    margin-bottom: 6px;
+  }
+
+  .notebook-subtitle {
+    font-size: 11px;
+    color: rgba(0,0,0,0.3);
+    letter-spacing: 0.05em;
+  }
+
+  .entry-list {
+    flex: 1;
+    overflow-y: auto;
+    padding-bottom: 20px;
+  }
+
+  .entry-list::-webkit-scrollbar { display: none; }
+
+  .entry-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 28px;
+    border-bottom: 1px solid rgba(0,0,0,0.055);
+    cursor: pointer;
+    transition: background 0.12s;
+  }
+
+  .entry-row:last-child { border-bottom: none; }
+  .entry-row:active { background: rgba(0,0,0,0.025); }
+  .entry-row:hover .entry-arrow { opacity: 1; transform: translateX(0); }
+
+  .entry-left { flex: 1; padding-right: 12px; }
+
+  .entry-title {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15.5px;
+    font-weight: 400;
+    color: #1a1a1a;
+    line-height: 1.3;
+    margin-bottom: 4px;
+  }
+
+  .entry-title.untitled {
+    color: rgba(0,0,0,0.25);
+    font-style: italic;
+  }
+
+  .entry-date {
+    font-size: 11px;
+    color: rgba(0,0,0,0.28);
+    letter-spacing: 0.04em;
+  }
+
+  .entry-arrow {
+    opacity: 0;
+    transform: translateX(-4px);
+    transition: opacity 0.15s, transform 0.15s;
+    flex-shrink: 0;
+  }
+
+  .entry-arrow svg {
+    width: 12px; height: 12px;
+    stroke: rgba(0,0,0,0.35); fill: none;
+    stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round;
+  }
+
+  .index-bottom {
+    padding: 10px 28px 18px;
+    flex-shrink: 0;
+  }
+
+  .index-count {
+    font-size: 11px;
+    color: rgba(0,0,0,0.22);
+    letter-spacing: 0.05em;
+  }
+
+  .empty-state {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    text-align: center;
+  }
+
+  .empty-title {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 22px;
+    font-weight: 300;
+    font-style: italic;
+    color: rgba(0,0,0,0.22);
+    margin-bottom: 8px;
+  }
+
+  .empty-sub {
+    font-size: 12px;
+    color: rgba(0,0,0,0.18);
+    letter-spacing: 0.03em;
+    line-height: 1.7;
+  }
+
+  /* ══════════════════════════════
+     SCREEN 4 — WRITING VIEW
+  ══════════════════════════════ */
+  #screen-writing { overflow: hidden; }
+
+  .writing-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 22px 28px 16px;
+    flex-shrink: 0;
+  }
+
+  .topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .save-indicator {
+    font-size: 11px;
+    color: rgba(0,0,0,0.25);
+    letter-spacing: 0.05em;
+    font-style: italic;
+  }
+
+  .more-dots {
+    display: flex;
+    gap: 3px;
+    align-items: center;
+    cursor: pointer;
+    padding: 4px;
+    position: relative;
+  }
+
+  .more-dots span {
+    width: 3.5px; height: 3.5px;
+    border-radius: 50%;
+    background: #0e0e0e;
+    display: block;
+  }
+
+  .entry-actions-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    background: #111111;
+    border-radius: 12px;
+    padding: 6px;
+    display: none;
+    flex-direction: column;
+    gap: 2px;
+    z-index: 300;
+    box-shadow: 0 10px 32px rgba(0,0,0,0.22);
+    min-width: 160px;
+  }
+
+  .entry-actions-menu.visible { display: flex; }
+
+  .action-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    width: 100%;
+    text-align: left;
+    transition: background 0.12s;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 400;
+    color: rgba(255,255,255,0.8);
+    letter-spacing: 0.01em;
+  }
+
+  .action-item:hover { background: rgba(255,255,255,0.1); }
+  .action-item.danger { color: rgba(255,90,90,0.9); }
+  .action-item.danger:hover { background: rgba(255,60,60,0.12); }
+
+  .confirm-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(245,245,240,0.92);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 400;
+    border-radius: 20px;
+    backdrop-filter: blur(4px);
+  }
+
+  .confirm-overlay.visible { display: flex; }
+
+  .confirm-box {
+    background: #f5f5f0;
+    border-radius: 16px;
+    padding: 28px 24px;
+    width: calc(100% - 48px);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.14);
+    text-align: center;
+  }
+
+  .confirm-title {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 22px;
+    font-weight: 300;
+    font-style: italic;
+    color: #0e0e0e;
+    margin-bottom: 8px;
+  }
+
+  .confirm-sub {
+    font-size: 12px;
+    color: rgba(0,0,0,0.38);
+    letter-spacing: 0.02em;
+    line-height: 1.6;
+    margin-bottom: 24px;
+  }
+
+  .confirm-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+  }
+
+  .confirm-cancel {
+    background: none;
+    border: 1px solid rgba(0,0,0,0.12);
+    border-radius: 8px;
+    padding: 9px 20px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    color: rgba(0,0,0,0.5);
+    cursor: pointer;
+  }
+
+  .confirm-delete {
+    background: #c0392b;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 9px 20px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+
+  .canvas {
+    flex: 1;
+    overflow-y: auto;
+    padding: 4px 36px 80px 52px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  .canvas::-webkit-scrollbar { display: none; }
+
+  .entry-date-label {
+    font-size: 11px;
+    color: rgba(0,0,0,0.28);
+    letter-spacing: 0.05em;
+    margin-bottom: 16px;
+  }
+
+  .title-input {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 36px;
+    font-weight: 300;
+    font-style: italic;
+    color: #0e0e0e;
+    line-height: 1.15;
+    border: none;
+    background: transparent;
+    outline: none;
+    width: 100%;
+    resize: none;
+    overflow: hidden;
+    margin-bottom: 4px;
+    letter-spacing: -0.01em;
+  }
+
+  .title-input::placeholder { color: rgba(0,0,0,0.15); }
+
+  .blocks { display: flex; flex-direction: column; }
+
+  .block-row {
+    display: flex;
+    align-items: center;
+    position: relative;
+    padding: 2px 0;
+  }
+
+  .plus-btn {
+    position: absolute;
+    left: -28px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    border: 1px solid rgba(0,0,0,0.22);
+    background: #f5f5f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.15s;
+    flex-shrink: 0;
+  }
+
+  .block-row.is-active .plus-btn { opacity: 1; }
+
+  .plus-btn svg {
+    width: 9px; height: 9px;
+    stroke: rgba(0,0,0,0.5); fill: none;
+    stroke-width: 1.8; stroke-linecap: round;
+  }
+
+  .block-content { width: 100%; }
+
+  .body-p {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15.5px;
+    font-weight: 400;
+    color: #1a1a1a;
+    line-height: 1.85;
+    border: none;
+    background: transparent;
+    outline: none;
+    width: 100%;
+    resize: none;
+    overflow: hidden;
+    letter-spacing: 0.005em;
+  }
+
+  .body-p b, .body-p strong,
+  .block-content b, .block-content strong { font-weight: 700; }
+
+  .body-p::placeholder { color: rgba(0,0,0,0.18); font-style: italic; }
+
+  .body-h2 {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 22px;
+    font-weight: 600;
+    font-style: italic;
+    color: #0e0e0e;
+    line-height: 1.3;
+    border: none;
+    background: transparent;
+    outline: none;
+    width: 100%;
+    resize: none;
+    overflow: hidden;
+    margin: 10px 0 3px;
+  }
+
+  .divider-block {
+    display: flex;
+    align-items: center;
+    padding: 14px 0;
+    width: 100%;
+  }
+
+  .divider-dots { display: flex; gap: 18px; margin: 0 auto; }
+  .divider-dots span {
+    width: 3.5px; height: 3.5px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.22);
+    display: block;
+  }
+
+  .writing-bottom {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    padding: 12px 28px 20px;
+    display: flex;
+    align-items: center;
+    background: linear-gradient(to bottom, transparent, #f5f5f0 40%);
+    pointer-events: none;
+  }
+
+  .word-count {
+    font-size: 11px;
+    color: rgba(0,0,0,0.22);
+    letter-spacing: 0.05em;
+  }
+
+  .insert-menu {
+    position: absolute;
+    background: #111111;
+    border-radius: 12px;
+    padding: 6px;
+    display: none;
+    flex-direction: row;
+    gap: 2px;
+    z-index: 200;
+    box-shadow: 0 10px 32px rgba(0,0,0,0.22);
+    bottom: 56px;
+    left: 50%;
+    transform: translateX(-50%);
+    pointer-events: all;
+  }
+
+  .insert-menu.visible { display: flex; }
+
+  .ins-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    padding: 9px 13px;
+    border-radius: 8px;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    transition: background 0.12s;
+  }
+
+  .ins-btn:hover { background: rgba(255,255,255,0.1); }
+
+  .ins-btn-label {
+    font-size: 9px;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 400;
+    color: rgba(255,255,255,0.5);
+  }
+
+  .fmt-toolbar {
+    position: absolute;
+    background: #111111;
+    border-radius: 9px;
+    padding: 5px;
+    display: none;
+    flex-direction: row;
+    align-items: center;
+    gap: 1px;
+    z-index: 200;
+    box-shadow: 0 10px 32px rgba(0,0,0,0.22);
+    bottom: 56px;
+    left: 50%;
+    transform: translateX(-50%);
+    pointer-events: all;
+  }
+
+  .fmt-toolbar.visible { display: flex; }
+
+  .fmt-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px; height: 30px;
+    border-radius: 6px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    transition: background 0.12s;
+  }
+
+  .fmt-btn:hover, .fmt-btn.active { background: rgba(255,255,255,0.12); }
+
+  .fmt-sep {
+    width: 1px; height: 16px;
+    background: rgba(255,255,255,0.12);
+    margin: 0 3px;
+    flex-shrink: 0;
+  }
+
+  mark.hl {
+    color: inherit;
+    background: none;
+    display: inline;
+    position: relative;
+    isolation: isolate;
+    padding: 1px 3px;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+  }
+
+  mark.hl > .hl-bg {
+    position: fixed;
+    border-radius: 3px;
+    z-index: -1;
+    display: block;
+    pointer-events: none;
+    background: rgba(255, 221, 10, 0.82);
+    filter: url(#organic-stroke);
+  }
+
+  .block-content [contenteditable] {
+    outline: none;
+    width: 100%;
+    min-height: 1.85em;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .block-content [contenteditable]:empty::before {
+    content: attr(data-placeholder);
+    color: rgba(0,0,0,0.18);
+    font-style: italic;
+    pointer-events: none;
+  }
+
+  /* ══════════════════════════════
+     MODALS
+  ══════════════════════════════ */
+  .modal-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(245,245,240,0.92);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 300;
+    border-radius: 20px;
+    backdrop-filter: blur(4px);
+  }
+
+  .modal-overlay.visible { display: flex; }
+
+  .modal {
+    background: #f5f5f0;
+    border-radius: 16px;
+    padding: 32px 28px;
+    width: calc(100% - 48px);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.14);
+  }
+
+  .modal-title {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 26px;
+    font-weight: 300;
+    font-style: italic;
+    color: #0e0e0e;
+    margin-bottom: 24px;
+  }
+
+  .modal-input {
+    width: 100%;
+    border: none;
+    border-bottom: 1px solid rgba(0,0,0,0.15);
+    background: transparent;
+    padding: 8px 0;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    font-weight: 300;
+    color: #0e0e0e;
+    outline: none;
+    margin-bottom: 28px;
+    transition: border-color 0.15s;
+  }
+
+  .modal-input:focus { border-bottom-color: #0e0e0e; }
+  .modal-input::placeholder { color: rgba(0,0,0,0.2); font-style: italic; }
+
+  .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+  }
+
+  .modal-cancel {
+    background: none;
+    border: none;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    color: rgba(0,0,0,0.4);
+    cursor: pointer;
+    padding: 8px 12px;
+    letter-spacing: 0.02em;
+  }
+
+  .modal-create {
+    background: #0e0e0e;
+    color: #f5f5f0;
+    border: none;
+    border-radius: 8px;
+    padding: 9px 20px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+  }
+
+  /* ══════════════════════════════
+     DRIVE AUTH MODAL
+  ══════════════════════════════ */
+  .drive-modal-body {
+    font-size: 13px;
+    color: rgba(0,0,0,0.5);
+    line-height: 1.6;
+    letter-spacing: 0.01em;
+    margin-bottom: 24px;
+  }
+
+  .drive-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #0e0e0e;
+    color: #f5f5f0;
+    border: none;
+    border-radius: 10px;
+    padding: 12px 20px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    width: 100%;
+    justify-content: center;
+    margin-bottom: 10px;
+  }
+
+  .drive-btn-skip {
+    display: block;
+    width: 100%;
+    text-align: center;
+    background: none;
+    border: none;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    color: rgba(0,0,0,0.3);
+    cursor: pointer;
+    padding: 6px;
+    letter-spacing: 0.02em;
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- ══ SCREEN 1: LOCK ══ -->
+  <div class="screen active" id="screen-lock">
+    <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding: 48px 40px; text-align:center;">
+      <div class="lock-wordmark">Sanctum</div>
+      <div class="lock-tagline">your private space</div>
+
+      <div class="lock-input-wrap">
+        <input class="lock-input" id="lockInput" type="password" placeholder="enter your passphrase…" autocomplete="off" />
+      </div>
+      <div class="lock-error" id="lockError"></div>
+      <div class="lock-hint" id="lockHint">Your first passphrase becomes your key.<br>Nothing leaves this device without it.</div>
+      <button class="lock-btn" id="lockBtn" onclick="handleLock()">enter</button>
+    </div>
+    <div class="lock-copy">Everything here is yours, and only yours.</div>
+  </div>
+
+  <!-- ══ SCREEN 2: SHELF ══ -->
+  <div class="screen" id="screen-shelf">
+    <div class="shelf-topbar">
+      <div class="shelf-wordmark">Sanctum</div>
+      <div class="shelf-right">
+        <button class="shelf-sync-btn" id="syncBtn" onclick="manualSync()" title="Sync to Drive">
+          <svg viewBox="0 0 16 16"><path d="M13.5 8A5.5 5.5 0 0 1 3.2 11.3"/><path d="M2.5 8A5.5 5.5 0 0 1 12.8 4.7"/><polyline points="11,2.5 13.5,4.7 11.2,6.8"/><polyline points="5,13.5 2.5,11.3 4.8,9.2"/></svg>
+        </button>
+        <button class="shelf-lock-btn" onclick="lockApp()" title="Lock">
+          <svg viewBox="0 0 16 16"><rect x="3" y="7" width="10" height="8" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="sync-bar">
+      <div class="sync-dot" id="syncDot"></div>
+      <span class="sync-label" id="syncLabel">not connected to Drive</span>
+    </div>
+    <div class="shelf-header">
+      <div class="shelf-date" id="shelfDate"></div>
+      <div class="shelf-greeting" id="shelfGreeting"></div>
+    </div>
+    <div class="section-rule"></div>
+    <div class="notebook-list" id="notebookList"></div>
+    <div class="shelf-add-row" onclick="showNewNotebookModal()">
+      <div class="shelf-add-circle">
+        <svg viewBox="0 0 9 9"><line x1="4.5" y1="1" x2="4.5" y2="8"/><line x1="1" y1="4.5" x2="8" y2="4.5"/></svg>
+      </div>
+      <span class="shelf-add-label">New notebook</span>
+    </div>
+  </div>
+
+  <!-- ══ SCREEN 3: ENTRY INDEX ══ -->
+  <div class="screen" id="screen-index">
+    <div class="topbar">
+      <button class="back-btn" onclick="goTo('shelf')">
+        <svg viewBox="0 0 14 14"><polyline points="9,2 4,7 9,12"/></svg>
+        Notebooks
+      </button>
+      <button class="icon-btn" onclick="newEntry()" title="New entry">
+        <svg viewBox="0 0 11 11"><line x1="5.5" y1="1" x2="5.5" y2="10"/><line x1="1" y1="5.5" x2="10" y2="5.5"/></svg>
+      </button>
+    </div>
+    <div class="notebook-header">
+      <div class="notebook-title" id="indexTitle">Observations</div>
+      <div class="notebook-subtitle" id="indexSubtitle">0 entries</div>
+    </div>
+    <div class="section-rule"></div>
+    <div class="entry-list" id="entryList"></div>
+    <div class="index-bottom">
+      <span class="index-count" id="indexCount"></span>
+    </div>
+  </div>
+
+  <!-- ══ SCREEN 4: WRITING VIEW ══ -->
+  <div class="screen" id="screen-writing">
+    <div class="writing-topbar">
+      <button class="back-btn" id="writingBack" onclick="saveAndGoIndex()">
+        <svg viewBox="0 0 14 14"><polyline points="9,2 4,7 9,12"/></svg>
+        <span id="writingBackLabel">Observations</span>
+      </button>
+      <div class="topbar-right">
+        <span class="save-indicator" id="saveIndicator">saved</span>
+        <div style="position:relative;">
+          <div class="more-dots" onclick="toggleEntryMenu()">
+            <span></span><span></span><span></span>
+          </div>
+          <div class="entry-actions-menu" id="entryActionsMenu">
+            <button class="action-item danger" onclick="confirmDeleteEntry()">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="rgba(255,90,90,0.9)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="2,4 12,4"/><path d="M5 4V2.5h4V4"/><path d="M3 4l.8 8h6.4l.8-8"/>
+              </svg>
+              Delete entry
+            </button>
+            <button class="action-item" onclick="exportEntry()">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="rgba(255,255,255,0.8)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M7 1v8M4 6l3 3 3-3"/><path d="M2 10v2h10v-2"/>
+              </svg>
+              Export as text
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="canvas" id="writingCanvas">
+      <div class="entry-date-label" id="entryDateLabel"></div>
+      <textarea class="title-input" id="entryTitle" name="entry-title" rows="2" placeholder="title your thought…" autocomplete="off"></textarea>
+      <div class="blocks" id="blocksContainer"></div>
+    </div>
+
+    <div class="writing-bottom">
+      <span class="word-count" id="wordCount">0 words</span>
+    </div>
+
+    <!-- Insert Menu -->
+    <div class="insert-menu" id="insertMenu">
+      <button class="ins-btn" onclick="insertBlock('image'); toggleInsert();">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+          <rect x="2" y="3.5" width="14" height="11" rx="2" stroke="#ffffff" stroke-opacity="0.8" stroke-width="1.4"/>
+          <circle cx="6" cy="7.5" r="1.4" fill="#ffffff" fill-opacity="0.8"/>
+          <path d="M2 13.5L6.5 9L10 12L12.5 9.5L16 13.5" stroke="#ffffff" stroke-opacity="0.8" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span class="ins-btn-label">Image</span>
+      </button>
+      <button class="ins-btn" onclick="insertBlock('break'); toggleInsert();">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+          <circle cx="5" cy="9" r="1.8" fill="#ffffff" fill-opacity="0.8"/>
+          <circle cx="9" cy="9" r="1.8" fill="#ffffff" fill-opacity="0.8"/>
+          <circle cx="13" cy="9" r="1.8" fill="#ffffff" fill-opacity="0.8"/>
+        </svg>
+        <span class="ins-btn-label">Break</span>
+      </button>
+      <button class="ins-btn" onclick="insertBlock('heading'); toggleInsert();">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+          <line x1="3" y1="5" x2="15" y2="5" stroke="#ffffff" stroke-opacity="0.8" stroke-width="2.2" stroke-linecap="round"/>
+          <line x1="3" y1="9.5" x2="15" y2="9.5" stroke="#ffffff" stroke-opacity="0.5" stroke-width="1.4" stroke-linecap="round"/>
+          <line x1="3" y1="13.5" x2="10" y2="13.5" stroke="#ffffff" stroke-opacity="0.5" stroke-width="1.4" stroke-linecap="round"/>
+        </svg>
+        <span class="ins-btn-label">Heading</span>
+      </button>
+      <button class="ins-btn" onclick="insertBlock('list'); toggleInsert();">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+          <circle cx="3.5" cy="5.5" r="1.5" fill="#ffffff" fill-opacity="0.8"/>
+          <line x1="7" y1="5.5" x2="15" y2="5.5" stroke="#ffffff" stroke-opacity="0.8" stroke-width="1.4" stroke-linecap="round"/>
+          <circle cx="3.5" cy="9.5" r="1.5" fill="#ffffff" fill-opacity="0.8"/>
+          <line x1="7" y1="9.5" x2="15" y2="9.5" stroke="#ffffff" stroke-opacity="0.8" stroke-width="1.4" stroke-linecap="round"/>
+          <circle cx="3.5" cy="13.5" r="1.5" fill="#ffffff" fill-opacity="0.8"/>
+          <line x1="7" y1="13.5" x2="12" y2="13.5" stroke="#ffffff" stroke-opacity="0.8" stroke-width="1.4" stroke-linecap="round"/>
+        </svg>
+        <span class="ins-btn-label">List</span>
+      </button>
+    </div>
+
+    <!-- SVG filter for organic highlights -->
+    <svg width="0" height="0" style="position:absolute;overflow:hidden">
+      <defs>
+        <filter id="organic-stroke" x="-20%" y="-80%" width="140%" height="260%" color-interpolation-filters="sRGB">
+          <feTurbulence type="turbulence" baseFrequency="0.024 0.096" numOctaves="4" seed="7" result="noise"/>
+          <feDisplacementMap in="SourceGraphic" in2="noise" scale="5" xChannelSelector="R" yChannelSelector="G"/>
+        </filter>
+      </defs>
+    </svg>
+
+    <!-- Format Toolbar -->
+    <div class="fmt-toolbar" id="fmtToolbar" onmousedown="event.preventDefault()">
+      <button class="fmt-btn" id="fmtBold" onclick="applyFormat('bold')">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <path d="M4 3h4a2.5 2.5 0 0 1 0 5H4V3z" fill="#ffffff" fill-opacity="0.8"/>
+          <path d="M4 8h4.5a2.75 2.75 0 0 1 0 5.5H4V8z" fill="#ffffff" fill-opacity="0.8"/>
+        </svg>
+      </button>
+      <button class="fmt-btn" id="fmtItalic" onclick="applyFormat('italic')">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <line x1="8.5" y1="2" x2="5.5" y2="12" stroke="#ffffff" stroke-opacity="0.8" stroke-width="1.8" stroke-linecap="round"/>
+          <line x1="6" y1="2" x2="11" y2="2" stroke="#ffffff" stroke-opacity="0.8" stroke-width="1.6" stroke-linecap="round"/>
+          <line x1="3" y1="12" x2="8" y2="12" stroke="#ffffff" stroke-opacity="0.8" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <div class="fmt-sep"></div>
+      <button class="fmt-btn" id="fmtHighlight" onclick="applyHighlight()">
+        <svg width="16" height="14" viewBox="0 0 16 14" fill="none">
+          <rect x="1" y="3" width="14" height="6" rx="1.5" fill="rgba(255,196,0,0.85)"/>
+          <line x1="4" y1="11" x2="12" y2="11" stroke="#ffffff" stroke-opacity="0.6" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <div class="fmt-sep"></div>
+      <button class="fmt-btn" id="fmtLink" onclick="applyFormat('link')">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <path d="M5.5 8.5C4.5 10 4.8 11.5 6 12.3C7.2 13.1 9 12.8 10 11.5L11.2 10.3C12.2 9.3 12.2 7.5 11 6.5" stroke="#ffffff" stroke-opacity="0.8" stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M8.5 5.5C9.5 4 9.2 2.5 8 1.7C6.8 0.9 5 1.2 4 2.5L2.8 3.7C1.8 4.7 1.8 6.5 3 7.5" stroke="#ffffff" stroke-opacity="0.8" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ══ NEW NOTEBOOK MODAL ══ -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+      <div class="modal-title">New notebook</div>
+      <input class="modal-input" id="newNotebookInput" placeholder="name it…" maxlength="40" />
+      <div class="modal-actions">
+        <button class="modal-cancel" onclick="hideNewNotebookModal()">cancel</button>
+        <button class="modal-create" onclick="createNotebook()">create</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ DRIVE AUTH MODAL ══ -->
+  <div class="modal-overlay" id="driveModalOverlay">
+    <div class="modal">
+      <div class="modal-title">Connect to Drive</div>
+      <div class="drive-modal-body">
+        Sanctum can encrypt your notes and back them up to your Google Drive — making them available on any device. Your passphrase is the key. Nothing is readable without it.
+      </div>
+      <button class="drive-btn" onclick="startDriveAuth()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f5f5f0" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2L2 19h20L12 2z"/>
+          <path d="M12 8l5 9H7l5-9z"/>
+        </svg>
+        Connect Google Drive
+      </button>
+      <button class="drive-btn-skip" onclick="skipDriveAuth()">maybe later</button>
+    </div>
+  </div>
+
+  <!-- ══ DELETE CONFIRM ══ -->
+  <div class="confirm-overlay" id="confirmOverlay">
+    <div class="confirm-box">
+      <div class="confirm-title">Delete this entry?</div>
+      <div class="confirm-sub">This can't be undone.</div>
+      <div class="confirm-actions">
+        <button class="confirm-cancel" onclick="hideConfirm()">keep it</button>
+        <button class="confirm-delete" onclick="deleteEntry()">delete</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ══════════════════════════════
+// CONFIG
+// ══════════════════════════════
+const GOOGLE_CLIENT_ID = '150427043311-is6t8ha9tcf0h8ienqj3g2gq1qvt45m4.apps.googleusercontent.com';
+const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
+const DRIVE_FILE_NAME = 'sanctum.enc';
+
+// ══════════════════════════════
+// STATE
+// ══════════════════════════════
+const DEFAULT_NOTEBOOKS = ['Observations','Ideas','Work','Personal','Disquiet'];
+let state = {
+  passphrase: null,
+  notebooks: [],
+  entries: {},
+  currentNotebook: null,
+  currentEntry: null,
+};
+
+// Throttle state — persisted separately so it survives page reload
+let lockThrottle = {
+  attempts: 0,
+  lockedUntil: 0,
+};
+
+// Crypto key — held in memory only, never persisted
+let cryptoKey = null;
+let cryptoSalt = null; // 16 random bytes, stored alongside ciphertext
+
+// Drive token — in memory only
+let driveToken = null;
+let driveFileId = null;
+
+// ══════════════════════════════
+// LOCK THROTTLE
+// ══════════════════════════════
+function loadThrottle() {
+  try {
+    const raw = localStorage.getItem('sanctum_throttle');
+    if (raw) lockThrottle = JSON.parse(raw);
+  } catch(e) {}
+}
+
+function saveThrottle() {
+  localStorage.setItem('sanctum_throttle', JSON.stringify(lockThrottle));
+}
+
+function recordFailedAttempt() {
+  lockThrottle.attempts++;
+  // Delay doubles: 2s, 4s, 8s, 16s… capped at 5 minutes
+  const delay = Math.min(2000 * Math.pow(2, lockThrottle.attempts - 1), 300000);
+  lockThrottle.lockedUntil = Date.now() + delay;
+  saveThrottle();
+}
+
+function resetThrottle() {
+  lockThrottle = { attempts: 0, lockedUntil: 0 };
+  saveThrottle();
+}
+
+function throttleRemaining() {
+  return Math.max(0, lockThrottle.lockedUntil - Date.now());
+}
+
+// Countdown ticker on lock button
+let throttleTimer = null;
+function startThrottleCountdown() {
+  clearInterval(throttleTimer);
+  const btn = document.getElementById('lockBtn');
+  const err = document.getElementById('lockError');
+
+  function tick() {
+    const remaining = throttleRemaining();
+    if (remaining <= 0) {
+      clearInterval(throttleTimer);
+      btn.disabled = false;
+      btn.textContent = 'enter';
+      err.textContent = 'You can try again now.';
+      return;
+    }
+    const secs = Math.ceil(remaining / 1000);
+    btn.disabled = true;
+    btn.textContent = 'wait ' + secs + 's';
+  }
+
+  tick();
+  throttleTimer = setInterval(tick, 500);
+}
+
+// ══════════════════════════════
+// CRYPTO — PBKDF2 + AES-GCM
+// ══════════════════════════════
+async function deriveKey(passphrase, salt) {
+  const enc = new TextEncoder();
+  const keyMaterial = await crypto.subtle.importKey(
+    'raw', enc.encode(passphrase), { name: 'PBKDF2' }, false, ['deriveKey']
+  );
+  return crypto.subtle.deriveKey(
+    { name: 'PBKDF2', salt, iterations: 100000, hash: 'SHA-256' },
+    keyMaterial,
+    { name: 'AES-GCM', length: 256 },
+    false,
+    ['encrypt', 'decrypt']
+  );
+}
+
+async function encryptData(data, key) {
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const enc = new TextEncoder();
+  const ciphertext = await crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv },
+    key,
+    enc.encode(JSON.stringify(data))
+  );
+  // Pack: [salt(16)] + [iv(12)] + [ciphertext]
+  const packed = new Uint8Array(cryptoSalt.length + iv.length + ciphertext.byteLength);
+  packed.set(cryptoSalt, 0);
+  packed.set(iv, cryptoSalt.length);
+  packed.set(new Uint8Array(ciphertext), cryptoSalt.length + iv.length);
+  return btoa(String.fromCharCode(...packed));
+}
+
+async function decryptData(b64, passphrase) {
+  const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+  const salt = bytes.slice(0, 16);
+  const iv = bytes.slice(16, 28);
+  const ciphertext = bytes.slice(28);
+  const key = await deriveKey(passphrase, salt);
+  const dec = new TextDecoder();
+  const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ciphertext);
+  return { data: JSON.parse(dec.decode(plain)), key, salt };
+}
+
+// ══════════════════════════════
+// LOCAL STATE
+// ══════════════════════════════
+function loadLocalState() {
+  try {
+    const raw = localStorage.getItem('sanctum_v1');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      // Only load non-sensitive structural data
+      state.notebooks = parsed.notebooks || [];
+      state.entries = parsed.entries || {};
+      // Load salt if present (needed to re-derive key on same device)
+      if (parsed.salt) {
+        cryptoSalt = Uint8Array.from(atob(parsed.salt), c => c.charCodeAt(0));
+      }
+      // Load the stored passphrase hash for lock verification
+      state._passphraseHash = parsed._passphraseHash || null;
+    }
+  } catch(e) {}
+
+  if (state.notebooks.length === 0) {
+    state.notebooks = DEFAULT_NOTEBOOKS.map((name, i) => ({
+      id: 'nb_default_' + i,
+      name,
+      createdAt: Date.now()
+    }));
+  }
+}
+
+function saveLocalState() {
+  const payload = {
+    notebooks: state.notebooks,
+    entries: state.entries,
+    _passphraseHash: state._passphraseHash,
+    salt: cryptoSalt ? btoa(String.fromCharCode(...cryptoSalt)) : null,
+  };
+  localStorage.setItem('sanctum_v1', JSON.stringify(payload));
+}
+
+// Verify passphrase using a stored PBKDF2-derived verification token
+// We store a known plaintext encrypted with the key — if decryption succeeds, passphrase is correct
+async function setPassphraseVerifier(passphrase, salt) {
+  const key = await deriveKey(passphrase, salt);
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const enc = new TextEncoder();
+  const token = await crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv }, key, enc.encode('sanctum-verify-v1')
+  );
+  const packed = new Uint8Array(iv.length + token.byteLength);
+  packed.set(iv, 0);
+  packed.set(new Uint8Array(token), iv.length);
+  return btoa(String.fromCharCode(...packed));
+}
+
+async function verifyPassphrase(passphrase, verifierB64, salt) {
+  try {
+    const bytes = Uint8Array.from(atob(verifierB64), c => c.charCodeAt(0));
+    const iv = bytes.slice(0, 12);
+    const token = bytes.slice(12);
+    const key = await deriveKey(passphrase, salt);
+    const dec = new TextDecoder();
+    const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, token);
+    return dec.decode(plain) === 'sanctum-verify-v1' ? key : null;
+  } catch(e) {
+    return null;
+  }
+}
+
+// ══════════════════════════════
+// LOCK SCREEN
+// ══════════════════════════════
+async function handleLock() {
+  const input = document.getElementById('lockInput');
+  const val = input.value.trim();
+  const err = document.getElementById('lockError');
+  const btn = document.getElementById('lockBtn');
+
+  if (!val) {
+    err.textContent = 'Enter a passphrase to continue.';
+    return;
+  }
+
+  // Check throttle
+  const remaining = throttleRemaining();
+  if (remaining > 0) {
+    startThrottleCountdown();
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = '…';
+
+  // First time — set passphrase
+  if (!state._passphraseHash) {
+    cryptoSalt = crypto.getRandomValues(new Uint8Array(16));
+    cryptoKey = await deriveKey(val, cryptoSalt);
+    state._passphraseHash = await setPassphraseVerifier(val, cryptoSalt);
+    state.passphrase = val; // keep in memory for Drive sync label
+    saveLocalState();
+    err.textContent = '';
+    btn.disabled = false;
+    btn.textContent = 'enter';
+    resetThrottle();
+    enterApp(true); // true = first time, offer Drive
+    return;
+  }
+
+  // Returning — verify
+  const key = await verifyPassphrase(val, state._passphraseHash, cryptoSalt);
+  if (key) {
+    cryptoKey = key;
+    state.passphrase = val;
+    err.textContent = '';
+    btn.disabled = false;
+    btn.textContent = 'enter';
+    resetThrottle();
+    enterApp(false);
+  } else {
+    recordFailedAttempt();
+    input.value = '';
+    input.focus();
+    btn.disabled = false;
+    btn.textContent = 'enter';
+    startThrottleCountdown();
+  }
+}
+
+document.getElementById('lockInput').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') handleLock();
+});
+
+function enterApp(firstTime) {
+  renderShelf();
+  goTo('shelf');
+  document.getElementById('lockHint').textContent = '';
+
+  if (firstTime) {
+    setTimeout(() => showDriveModal(), 600);
+  } else if (driveToken) {
+    syncFromDrive();
+  }
+}
+
+function lockApp() {
+  cryptoKey = null;
+  driveToken = null;
+  state.passphrase = null;
+  document.getElementById('lockInput').value = '';
+  document.getElementById('lockError').textContent = '';
+  document.getElementById('lockBtn').disabled = false;
+  document.getElementById('lockBtn').textContent = 'enter';
+  clearInterval(throttleTimer);
+  goTo('lock');
+}
+
+// ══════════════════════════════
+// GOOGLE DRIVE AUTH
+// ══════════════════════════════
+function showDriveModal() {
+  document.getElementById('driveModalOverlay').classList.add('visible');
+}
+
+function hideDriveModal() {
+  document.getElementById('driveModalOverlay').classList.remove('visible');
+}
+
+function skipDriveAuth() {
+  hideDriveModal();
+  setSyncStatus('idle', 'backup not enabled');
+}
+
+function startDriveAuth() {
+  hideDriveModal();
+  const client = google.accounts.oauth2.initTokenClient({
+    client_id: GOOGLE_CLIENT_ID,
+    scope: DRIVE_SCOPE,
+    callback: async (response) => {
+      if (response.error) {
+        setSyncStatus('err', 'Drive connection failed');
+        return;
+      }
+      driveToken = response.access_token;
+      setSyncStatus('busy', 'connected, syncing…');
+      await syncFromDrive();
+    },
+  });
+  client.requestAccessToken();
+}
+
+async function manualSync() {
+  if (!driveToken) {
+    showDriveModal();
+    return;
+  }
+  setSyncStatus('busy', 'syncing…');
+  await syncToDrive();
+}
+
+// ══════════════════════════════
+// DRIVE SYNC
+// ══════════════════════════════
+function setSyncStatus(state, label) {
+  const dot = document.getElementById('syncDot');
+  const lbl = document.getElementById('syncLabel');
+  const btn = document.getElementById('syncBtn');
+  dot.className = 'sync-dot' + (state !== 'idle' ? ' ' + state : '');
+  lbl.textContent = label;
+  if (state === 'busy') {
+    btn.classList.add('syncing');
+  } else {
+    btn.classList.remove('syncing');
+  }
+}
+
+async function findDriveFile() {
+  const res = await fetch(
+    'https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name%3D%27' + DRIVE_FILE_NAME + '%27&fields=files(id)',
+    { headers: { Authorization: 'Bearer ' + driveToken } }
+  );
+  const data = await res.json();
+  return data.files && data.files.length > 0 ? data.files[0].id : null;
+}
+
+async function readDriveFile(fileId) {
+  const res = await fetch(
+    'https://www.googleapis.com/drive/v3/files/' + fileId + '?alt=media',
+    { headers: { Authorization: 'Bearer ' + driveToken } }
+  );
+  return res.text();
+}
+
+async function writeDriveFile(content, existingFileId) {
+  const blob = new Blob([content], { type: 'text/plain' });
+  let url, method;
+
+  if (existingFileId) {
+    url = 'https://www.googleapis.com/upload/drive/v3/files/' + existingFileId + '?uploadType=media';
+    method = 'PATCH';
+  } else {
+    // Create with metadata in appDataFolder
+    const meta = JSON.stringify({ name: DRIVE_FILE_NAME, parents: ['appDataFolder'] });
+    const form = new FormData();
+    form.append('metadata', new Blob([meta], { type: 'application/json' }));
+    form.append('file', blob);
+    const res = await fetch(
+      'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id',
+      { method: 'POST', headers: { Authorization: 'Bearer ' + driveToken }, body: form }
+    );
+    const data = await res.json();
+    return data.id;
+  }
+
+  await fetch(url, {
+    method,
+    headers: { Authorization: 'Bearer ' + driveToken, 'Content-Type': 'text/plain' },
+    body: content,
+  });
+  return existingFileId;
+}
+
+async function syncToDrive() {
+  if (!driveToken || !cryptoKey) return;
+  try {
+    setSyncStatus('busy', 'encrypting…');
+    const payload = { notebooks: state.notebooks, entries: state.entries };
+    const encrypted = await encryptData(payload, cryptoKey);
+
+    setSyncStatus('busy', 'uploading…');
+    if (!driveFileId) driveFileId = await findDriveFile();
+    driveFileId = await writeDriveFile(encrypted, driveFileId);
+
+    const now = new Date();
+    setSyncStatus('ok', 'backed up ' + now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+  } catch(e) {
+    setSyncStatus('err', 'sync failed — check connection');
+    console.error('Drive sync error:', e);
+  }
+}
+
+async function syncFromDrive() {
+  if (!driveToken || !cryptoKey) return;
+  try {
+    setSyncStatus('busy', 'checking Drive…');
+    driveFileId = await findDriveFile();
+
+    if (!driveFileId) {
+      // No remote file yet — push local state up
+      await syncToDrive();
+      return;
+    }
+
+    setSyncStatus('busy', 'downloading…');
+    const encrypted = await readDriveFile(driveFileId);
+
+    setSyncStatus('busy', 'decrypting…');
+    const { data } = await decryptData(encrypted, state.passphrase);
+
+    // Merge: Drive wins on conflict (it's the source of truth)
+    // Simple strategy: use Drive data, preserve any local entries not on Drive
+    const driveEntryIds = new Set();
+    Object.values(data.entries || {}).forEach(arr => arr.forEach(e => driveEntryIds.add(e.id)));
+
+    state.notebooks = data.notebooks || state.notebooks;
+
+    // Merge entries: start with Drive data, add any local-only entries
+    state.entries = data.entries || {};
+    const localEntries = JSON.parse(localStorage.getItem('sanctum_v1') || '{}').entries || {};
+    Object.keys(localEntries).forEach(nbId => {
+      if (!state.entries[nbId]) state.entries[nbId] = [];
+      localEntries[nbId].forEach(entry => {
+        if (!driveEntryIds.has(entry.id)) {
+          state.entries[nbId].push(entry);
+        }
+      });
+    });
+
+    saveLocalState();
+    renderShelf();
+
+    const now = new Date();
+    setSyncStatus('ok', 'synced ' + now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+  } catch(e) {
+    setSyncStatus('err', 'sync failed — check connection');
+    console.error('Drive restore error:', e);
+  }
+}
+
+// ══════════════════════════════
+// SAVE STATE (hooks into Drive sync)
+// ══════════════════════════════
+let driveSyncTimer = null;
+
+function saveState() {
+  saveLocalState();
+  // Debounce Drive sync — don't hammer API on every keystroke
+  if (driveToken) {
+    clearTimeout(driveSyncTimer);
+    driveSyncTimer = setTimeout(syncToDrive, 4000);
+  }
+}
+
+// ══════════════════════════════
+// NAVIGATION
+// ══════════════════════════════
+function goTo(screenId) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + screenId).classList.add('active');
+}
+
+// ══════════════════════════════
+// SHELF
+// ══════════════════════════════
+function renderShelf() {
+  const list = document.getElementById('notebookList');
+  list.innerHTML = '';
+
+  const now = new Date();
+  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const dateStr = days[now.getDay()] + ', ' + months[now.getMonth()] + ' ' + now.getDate();
+  document.getElementById('shelfDate').textContent = dateStr;
+
+  const greetings = [
+    'Good morning. Your next sentence is waiting.',
+    'Start small. Great pages begin with one line.',
+    'Today is a good day to write badly and keep going.',
+    'Progress loves a blank page.',
+    'One paragraph can change everything.',
+    'Show up. The words will follow.',
+    'Begin before you\'re ready.',
+    'Momentum starts with one sentence.',
+    'Write something your future self will thank you for.',
+    'There\'s something only you can write today.',
+  ];
+  const idx = (now.getFullYear() * 366 + now.getMonth() * 31 + now.getDate()) % greetings.length;
+  document.getElementById('shelfGreeting').textContent = greetings[idx];
+
+  state.notebooks.forEach(nb => {
+    const entries = state.entries[nb.id] || [];
+    const count = entries.length;
+    const row = document.createElement('div');
+    row.className = 'notebook-row';
+    row.innerHTML = `
+      <div class="nb-left">
+        <div class="nb-name">${nb.name}</div>
+        <div class="nb-meta">${count === 0 ? 'empty' : count + (count === 1 ? ' entry' : ' entries')}</div>
+      </div>
+      <div class="nb-arrow"><svg viewBox="0 0 12 12"><polyline points="4,2 9,6 4,10"/></svg></div>
+    `;
+    row.onclick = () => openNotebook(nb.id);
+    list.appendChild(row);
+  });
+}
+
+function showNewNotebookModal() {
+  document.getElementById('modalOverlay').classList.add('visible');
+  setTimeout(() => document.getElementById('newNotebookInput').focus(), 50);
+}
+
+function hideNewNotebookModal() {
+  document.getElementById('modalOverlay').classList.remove('visible');
+  document.getElementById('newNotebookInput').value = '';
+}
+
+document.getElementById('newNotebookInput').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') createNotebook();
+  if (e.key === 'Escape') hideNewNotebookModal();
+});
+
+function createNotebook() {
+  const input = document.getElementById('newNotebookInput');
+  const name = input.value.trim();
+  if (!name) return;
+  const nb = { id: 'nb_' + Date.now(), name, createdAt: Date.now() };
+  state.notebooks.push(nb);
+  saveState();
+  hideNewNotebookModal();
+  renderShelf();
+}
+
+// ══════════════════════════════
+// ENTRY INDEX
+// ══════════════════════════════
+function openNotebook(nbId) {
+  state.currentNotebook = nbId;
+  renderIndex();
+  goTo('index');
+}
+
+function renderIndex() {
+  const nb = state.notebooks.find(n => n.id === state.currentNotebook);
+  if (!nb) return;
+
+  document.getElementById('indexTitle').textContent = nb.name;
+  document.getElementById('writingBackLabel').textContent = nb.name;
+
+  const entries = (state.entries[state.currentNotebook] || [])
+    .slice().sort((a,b) => b.updatedAt - a.updatedAt);
+
+  const count = entries.length;
+  const subtitle = count === 0 ? 'empty' : count + (count === 1 ? ' entry' : ' entries');
+  document.getElementById('indexSubtitle').textContent = subtitle;
+  document.getElementById('indexCount').textContent = count > 0 ? subtitle : '';
+
+  const list = document.getElementById('entryList');
+  list.innerHTML = '';
+
+  if (count === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'empty-state';
+    empty.innerHTML = `
+      <div class="empty-title">Nothing here yet</div>
+      <div class="empty-sub">Tap + to write your first entry.</div>
+    `;
+    list.appendChild(empty);
+    return;
+  }
+
+  entries.forEach(entry => {
+    const date = formatDate(entry.updatedAt);
+    const row = document.createElement('div');
+    row.className = 'entry-row';
+    const titleDisplay = entry.title || 'Untitled';
+    const titleClass = entry.title ? 'entry-title' : 'entry-title untitled';
+    row.innerHTML = `
+      <div class="entry-left">
+        <div class="${titleClass}">${titleDisplay}</div>
+        <div class="entry-date">${date}</div>
+      </div>
+      <div class="entry-arrow"><svg viewBox="0 0 12 12"><polyline points="4,2 9,6 4,10"/></svg></div>
+    `;
+    row.onclick = () => openEntry(entry.id);
+    list.appendChild(row);
+  });
+}
+
+function formatDate(ts) {
+  const d = new Date(ts);
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return months[d.getMonth()] + ' ' + d.getDate();
+}
+
+function newEntry() {
+  const entry = {
+    id: 'entry_' + Date.now(),
+    title: '',
+    body: '',
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+  };
+  if (!state.entries[state.currentNotebook]) {
+    state.entries[state.currentNotebook] = [];
+  }
+  state.entries[state.currentNotebook].unshift(entry);
+  saveState();
+  state.currentEntry = entry.id;
+  loadWritingView(entry);
+  goTo('writing');
+}
+
+function openEntry(entryId) {
+  const entries = state.entries[state.currentNotebook] || [];
+  const entry = entries.find(e => e.id === entryId);
+  if (!entry) return;
+  state.currentEntry = entryId;
+  loadWritingView(entry);
+  goTo('writing');
+}
+
+// ══════════════════════════════
+// WRITING VIEW
+// ══════════════════════════════
+function makePlusBtn() {
+  return `<div class="plus-btn" onclick="toggleInsert()"><svg viewBox="0 0 9 9"><line x1="4.5" y1="1" x2="4.5" y2="8"/><line x1="1" y1="4.5" x2="8" y2="4.5"/></svg></div>`;
+}
+
+function setActiveBlock(row) {
+  document.querySelectorAll('.block-row.is-active').forEach(r => r.classList.remove('is-active'));
+  if (row) row.classList.add('is-active');
+}
+
+let savedRange = null;
+
+function saveSelectionRange() {
+  const sel = window.getSelection();
+  if (sel && !sel.isCollapsed) {
+    savedRange = sel.getRangeAt(0).cloneRange();
+  }
+}
+
+function restoreSelectionRange() {
+  if (!savedRange) return false;
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(savedRange);
+  return true;
+}
+
+document.getElementById('writingCanvas').addEventListener('mouseup', () => {
+  setTimeout(saveSelectionRange, 15);
+});
+document.getElementById('writingCanvas').addEventListener('keyup', saveSelectionRange);
+
+function positionHlBg(mark) {
+  mark.querySelectorAll('.hl-bg').forEach(s => s.remove());
+  const rects = mark.getClientRects();
+  const scrollX = window.scrollX;
+  const scrollY = window.scrollY;
+  Array.from(rects).forEach(rect => {
+    const bg = document.createElement('span');
+    bg.className = 'hl-bg';
+    bg.style.top    = (rect.top  + scrollY) + 'px';
+    bg.style.left   = (rect.left + scrollX - 3) + 'px';
+    bg.style.width  = (rect.width + 6) + 'px';
+    bg.style.height = rect.height + 'px';
+    mark.appendChild(bg);
+  });
+}
+
+function repositionAllHighlights() {
+  document.querySelectorAll('mark.hl').forEach(positionHlBg);
+}
+
+document.getElementById('writingCanvas').addEventListener('scroll', repositionAllHighlights);
+window.addEventListener('resize', repositionAllHighlights);
+
+function applyHighlight() {
+  if (!savedRange) return;
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(savedRange);
+
+  const anchor = sel.anchorNode;
+  const node = anchor ? (anchor.nodeType === 3 ? anchor.parentElement : anchor) : null;
+  const existingMark = node ? node.closest('mark.hl') : null;
+
+  if (existingMark) {
+    const frag = document.createDocumentFragment();
+    while (existingMark.firstChild) frag.appendChild(existingMark.firstChild);
+    existingMark.replaceWith(frag);
+    sel.removeAllRanges();
+    savedRange = null;
+    markUnsaved();
+    return;
+  }
+
+  const range = sel.getRangeAt(0);
+  const mark = document.createElement('mark');
+  mark.className = 'hl';
+  mark.dataset.seed = Math.floor(Math.random() * 900) + 100;
+  const fragment = range.extractContents();
+  mark.appendChild(fragment);
+  range.insertNode(mark);
+  requestAnimationFrame(() => positionHlBg(mark));
+  sel.removeAllRanges();
+  savedRange = null;
+  markUnsaved();
+  updateWordCount();
+}
+
+function applyFormat(type) {
+  restoreSelectionRange();
+  const sel = window.getSelection();
+  if (!sel || sel.isCollapsed) return;
+
+  if (type === 'bold') {
+    document.execCommand('bold', false, null);
+  } else if (type === 'italic') {
+    document.execCommand('italic', false, null);
+  } else if (type === 'link') {
+    const url = prompt('Enter URL:');
+    if (url) {
+      restoreSelectionRange();
+      document.execCommand('createLink', false, url);
+    }
+  }
+  savedRange = null;
+  markUnsaved();
+}
+
+function checkSelection() {
+  const sel = window.getSelection();
+  const toolbar = document.getElementById('fmtToolbar');
+  if (!toolbar) return;
+  if (sel && !sel.isCollapsed) {
+    const anchor = sel.anchorNode;
+    const inCanvas = anchor && document.getElementById('writingCanvas').contains(anchor);
+    if (inCanvas) { toolbar.classList.add('visible'); return; }
+  }
+  toolbar.classList.remove('visible');
+}
+
+document.getElementById('writingCanvas').addEventListener('mouseup', () => { setTimeout(checkSelection, 10); });
+document.getElementById('writingCanvas').addEventListener('touchend', () => { setTimeout(checkSelection, 10); });
+document.addEventListener('selectionchange', () => {
+  const sel = window.getSelection();
+  if (sel && sel.isCollapsed) {
+    const toolbar = document.getElementById('fmtToolbar');
+    if (toolbar) toolbar.classList.remove('visible');
+  }
+});
+
+function cleanEmptyMarks(el) {
+  el.querySelectorAll('mark.hl').forEach(mark => {
+    const textContent = Array.from(mark.childNodes)
+      .filter(n => !n.classList || !n.classList.contains('hl-bg'))
+      .map(n => n.textContent)
+      .join('');
+    if (textContent === '') mark.remove();
+  });
+  requestAnimationFrame(() => repositionAllHighlights());
+}
+
+function wireBlock(el, row) {
+  el.addEventListener('focus', () => setActiveBlock(row));
+  el.addEventListener('blur', () => {
+    setTimeout(() => {
+      if (!document.activeElement.closest('.block-row')) {
+        document.querySelectorAll('.block-row.is-active').forEach(r => r.classList.remove('is-active'));
+      }
+    }, 120);
+  });
+  el.addEventListener('input', () => { cleanEmptyMarks(el); markUnsaved(); updateWordCount(); });
+  el.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const container = document.getElementById('blocksContainer');
+      insertNewTextBlockAfter(row, container);
+    }
+    if (e.key === 'Backspace') {
+      if (el.innerHTML === '' || el.innerHTML === '<br>') {
+        e.preventDefault();
+        const container = row.parentElement;
+        const rows = Array.from(container.querySelectorAll('.block-row'));
+        if (rows.length <= 1) return;
+        const idx = rows.indexOf(row);
+        const prevRow = rows[idx - 1];
+        const isAfterBreak = prevRow && prevRow.querySelector('.divider-block');
+        if (isAfterBreak) {
+          const prevPrevRow = rows[idx - 2];
+          prevRow.remove();
+          row.remove();
+          markUnsaved();
+          if (prevPrevRow) {
+            const prevEl = prevPrevRow.querySelector('[contenteditable]');
+            if (prevEl) { prevEl.focus(); setActiveBlock(prevPrevRow); moveCursorToEnd(prevEl); }
+          }
+          return;
+        }
+        row.remove();
+        markUnsaved();
+        if (prevRow) {
+          const prevEl = prevRow.querySelector('[contenteditable]');
+          if (prevEl) { prevEl.focus(); setActiveBlock(prevRow); moveCursorToEnd(prevEl); }
+        }
+      }
+    }
+  });
+}
+
+function moveCursorToEnd(el) {
+  const range = document.createRange();
+  const sel = window.getSelection();
+  range.selectNodeContents(el);
+  range.collapse(false);
+  sel.removeAllRanges();
+  sel.addRange(range);
+}
+
+function makeTextBlock(html, placeholder, isHeading) {
+  const row = document.createElement('div');
+  row.className = 'block-row';
+  const cls = isHeading ? 'body-h2' : 'body-p';
+  row.innerHTML = `
+    ${makePlusBtn()}
+    <div class="block-content">
+      <div class="${cls}" contenteditable="true" data-placeholder="${placeholder || 'continue…'}">${html || ''}</div>
+    </div>
+  `;
+  const el = row.querySelector('[contenteditable]');
+  wireBlock(el, row);
+  return row;
+}
+
+function insertNewTextBlockAfter(referenceRow, container) {
+  const row = makeTextBlock('', 'continue…', false);
+  referenceRow.insertAdjacentElement('afterend', row);
+  const el = row.querySelector('[contenteditable]');
+  el.focus();
+  setActiveBlock(row);
+  return row;
+}
+
+function appendTextBlock(container, html, placeholder, isHeading, noFocus) {
+  const row = makeTextBlock(html, placeholder, isHeading);
+  container.appendChild(row);
+  if (!noFocus) {
+    const el = row.querySelector('[contenteditable]');
+    el.focus();
+    setActiveBlock(row);
+  }
+  return row;
+}
+
+function loadWritingView(entry) {
+  const nb = state.notebooks.find(n => n.id === state.currentNotebook);
+  const d = new Date(entry.createdAt);
+  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('entryDateLabel').textContent =
+    days[d.getDay()] + ', ' + months[d.getMonth()] + ' ' + d.getDate() + ' · ' + (nb ? nb.name : '');
+
+  document.getElementById('entryTitle').value = entry.title || '';
+
+  const container = document.getElementById('blocksContainer');
+  container.innerHTML = '';
+
+  const blocks = entry.blocks || [];
+
+  if (blocks.length === 0) {
+    const legacyText = entry.body || '';
+    const row = makeTextBlock(legacyText, 'begin…', false);
+    container.appendChild(row);
+    if (!entry.title && !legacyText) {
+      const el = row.querySelector('[contenteditable]');
+      if (el) { el.focus(); setActiveBlock(row); }
+    }
+  } else {
+    let firstEditableRow = null;
+    const isNewEntry = !entry.title && blocks.every(b => !b.html);
+
+    blocks.forEach((block, i) => {
+      if (block.type === 'break') {
+        const row = document.createElement('div');
+        row.className = 'block-row';
+        row.innerHTML = `${makePlusBtn()}<div class="block-content"><div class="divider-block"><div class="divider-dots"><span></span><span></span><span></span></div></div></div>`;
+        container.appendChild(row);
+      } else if (block.type === 'image') {
+        const row = document.createElement('div');
+        row.className = 'block-row';
+        row.innerHTML = `${makePlusBtn()}<div class="block-content"><div style="background:rgba(0,0,0,0.03);border-radius:8px;height:90px;display:flex;align-items:center;justify-content:center;margin:6px 0;border:1px dashed rgba(0,0,0,0.1);"><div style="display:flex;flex-direction:column;align-items:center;gap:5px;"><svg width="18" height="18" viewBox="0 0 20 20" stroke="rgba(0,0,0,0.22)" fill="none" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="16" height="12" rx="2"/><circle cx="7" cy="8.5" r="1.5"/><polyline points="2,14 7,9 11,13 14,10 18,14"/></svg><span style="font-size:10px;color:rgba(0,0,0,0.25);letter-spacing:0.05em;">add image</span></div></div></div>`;
+        container.appendChild(row);
+      } else {
+        const isHeading = block.type === 'heading';
+        const placeholder = i === 0 ? 'begin…' : 'continue…';
+        const row = appendTextBlock(container, block.html || '', placeholder, isHeading, true);
+        if (!firstEditableRow) firstEditableRow = row;
+      }
+    });
+
+    if (isNewEntry && firstEditableRow) {
+      const el = firstEditableRow.querySelector('[contenteditable]');
+      if (el) { el.focus(); setActiveBlock(firstEditableRow); }
+    }
+  }
+
+  autoResizeTitle();
+  updateWordCount();
+  document.getElementById('saveIndicator').textContent = 'saved';
+  requestAnimationFrame(() => repositionAllHighlights());
+}
+
+function insertBlock(type) {
+  const container = document.getElementById('blocksContainer');
+
+  if (type === 'break') {
+    const row = document.createElement('div');
+    row.className = 'block-row';
+    row.innerHTML = `${makePlusBtn()}<div class="block-content"><div class="divider-block"><div class="divider-dots"><span></span><span></span><span></span></div></div></div>`;
+    container.appendChild(row);
+    appendTextBlock(container, '', 'continue…', false);
+    markUnsaved();
+    return;
+  }
+
+  if (type === 'heading') {
+    appendTextBlock(container, '', 'heading…', true);
+    markUnsaved();
+    return;
+  }
+
+  if (type === 'image') {
+    const row = document.createElement('div');
+    row.className = 'block-row';
+    row.innerHTML = `${makePlusBtn()}<div class="block-content"><div style="background:rgba(0,0,0,0.03);border-radius:8px;height:90px;display:flex;align-items:center;justify-content:center;margin:6px 0;border:1px dashed rgba(0,0,0,0.1);"><div style="display:flex;flex-direction:column;align-items:center;gap:5px;"><svg width="18" height="18" viewBox="0 0 20 20" stroke="rgba(0,0,0,0.22)" fill="none" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="16" height="12" rx="2"/><circle cx="7" cy="8.5" r="1.5"/><polyline points="2,14 7,9 11,13 14,10 18,14"/></svg><span style="font-size:10px;color:rgba(0,0,0,0.25);letter-spacing:0.05em;">add image</span></div></div></div>`;
+    container.appendChild(row);
+    appendTextBlock(container, '', 'continue…', false);
+    markUnsaved();
+    return;
+  }
+
+  appendTextBlock(container, '', 'continue…', false);
+  markUnsaved();
+}
+
+let saveTimer = null;
+
+function markUnsaved() {
+  document.getElementById('saveIndicator').textContent = 'saving…';
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveCurrentEntry, 800);
+}
+
+function serializeBlocks() {
+  const container = document.getElementById('blocksContainer');
+  const rows = container.querySelectorAll('.block-row');
+  const blocks = [];
+  rows.forEach(row => {
+    if (row.querySelector('.divider-block')) {
+      blocks.push({ type: 'break', html: '' });
+    } else if (row.querySelector('.body-h2')) {
+      blocks.push({ type: 'heading', html: row.querySelector('.body-h2').innerHTML });
+    } else if (row.querySelector('[style*="dashed"]')) {
+      blocks.push({ type: 'image', html: '' });
+    } else {
+      const el = row.querySelector('.body-p');
+      if (el) blocks.push({ type: 'text', html: el.innerHTML });
+    }
+  });
+  return blocks;
+}
+
+function saveCurrentEntry() {
+  if (!state.currentEntry || !state.currentNotebook) return;
+  const entries = state.entries[state.currentNotebook];
+  if (!entries) return;
+  const entry = entries.find(e => e.id === state.currentEntry);
+  if (!entry) return;
+
+  entry.title = document.getElementById('entryTitle').value.trim();
+  entry.blocks = serializeBlocks();
+  entry.body = entry.blocks.map(b => b.html ? b.html.replace(/<[^>]+>/g, '') : '').join(' ');
+  entry.updatedAt = Date.now();
+
+  saveState();
+  document.getElementById('saveIndicator').textContent = 'saved';
+}
+
+function saveAndGoIndex() {
+  saveCurrentEntry();
+  renderIndex();
+  goTo('index');
+  hideInsert();
+}
+
+function updateWordCount() {
+  const title = document.getElementById('entryTitle').value || '';
+  const blocks = document.querySelectorAll('#blocksContainer [contenteditable]');
+  let text = title;
+  blocks.forEach(b => text += ' ' + (b.innerText || ''));
+  const words = text.trim().split(/\s+/).filter(w => w.length > 0).length;
+  document.getElementById('wordCount').textContent = words + (words === 1 ? ' word' : ' words');
+}
+
+function autoResizeTitle() {
+  const ta = document.getElementById('entryTitle');
+  if (ta) { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; }
+}
+
+document.getElementById('entryTitle').addEventListener('input', function() {
+  autoResizeTitle();
+  markUnsaved();
+  updateWordCount();
+});
+
+document.getElementById('entryTitle').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    const firstEl = document.querySelector('#blocksContainer [contenteditable]');
+    if (firstEl) {
+      firstEl.focus();
+      setActiveBlock(firstEl.closest('.block-row'));
+      moveCursorToEnd(firstEl);
+    }
+  }
+});
+
+// ══════════════════════════════
+// ENTRY ACTIONS MENU
+// ══════════════════════════════
+function toggleEntryMenu() {
+  document.getElementById('entryActionsMenu').classList.toggle('visible');
+}
+
+function hideEntryMenu() {
+  document.getElementById('entryActionsMenu').classList.remove('visible');
+}
+
+function confirmDeleteEntry() {
+  hideEntryMenu();
+  document.getElementById('confirmOverlay').classList.add('visible');
+}
+
+function hideConfirm() {
+  document.getElementById('confirmOverlay').classList.remove('visible');
+}
+
+function deleteEntry() {
+  if (!state.currentEntry || !state.currentNotebook) return;
+  const entries = state.entries[state.currentNotebook];
+  if (!entries) return;
+  const idx = entries.findIndex(e => e.id === state.currentEntry);
+  if (idx !== -1) entries.splice(idx, 1);
+  state.currentEntry = null;
+  saveState();
+  hideConfirm();
+  renderIndex();
+  goTo('index');
+}
+
+function exportEntry() {
+  hideEntryMenu();
+  if (!state.currentEntry || !state.currentNotebook) return;
+  const entries = state.entries[state.currentNotebook] || [];
+  const entry = entries.find(e => e.id === state.currentEntry);
+  if (!entry) return;
+
+  const nb = state.notebooks.find(n => n.id === state.currentNotebook);
+  const title = entry.title || 'Untitled';
+  const body = entry.body || '';
+  const date = new Date(entry.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  const text = `${title}\n${date} · ${nb ? nb.name : ''}\n\n${body}`;
+
+  const blob = new Blob([text], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = title.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.txt';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.more-dots') && !e.target.closest('.entry-actions-menu')) {
+    hideEntryMenu();
+  }
+});
+
+function toggleInsert() {
+  document.getElementById('insertMenu').classList.toggle('visible');
+  document.getElementById('fmtToolbar').classList.remove('visible');
+}
+
+function hideInsert() {
+  document.getElementById('insertMenu').classList.remove('visible');
+  document.getElementById('fmtToolbar').classList.remove('visible');
+}
+
+document.getElementById('writingCanvas').addEventListener('click', function(e) {
+  if (!e.target.closest('.plus-btn')) hideInsert();
+});
+
+// ══════════════════════════════
+// INIT
+// ══════════════════════════════
+loadThrottle();
+loadLocalState();
+
+// Restore throttle UI if still locked out
+if (throttleRemaining() > 0) {
+  startThrottleCountdown();
+}
+
+// Update lock hint
+if (state._passphraseHash) {
+  document.getElementById('lockHint').textContent = '';
+}
+</script>
+</body>
+</html>
