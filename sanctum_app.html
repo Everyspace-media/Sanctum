@@ -1622,10 +1622,12 @@ function startDriveAuth() {
 }
 
 async function handleImplicitCallback() {
+  // Token may arrive in hash fragment or query string depending on Google's routing
   const hash = window.location.hash.slice(1);
+  const search = window.location.search.slice(1);
   window.history.replaceState({}, '', window.location.pathname);
 
-  const params = new URLSearchParams(hash);
+  const params = new URLSearchParams(hash || search);
   const token = params.get('access_token');
   const error = params.get('error');
 
@@ -2469,7 +2471,7 @@ if (state._passphraseHash) {
 }
 
 // Handle implicit OAuth callback — token arrives in hash fragment
-if (window.location.hash.includes('access_token=') || window.location.hash.includes('error=')) {
+if (window.location.hash.includes('access_token=') || window.location.search.includes('access_token=') || window.location.hash.includes('error=') || window.location.search.includes('error=')) {
   if (state._passphraseHash) {
     renderShelf();
     goTo('shelf');
